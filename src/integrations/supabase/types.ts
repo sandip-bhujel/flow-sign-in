@@ -47,7 +47,7 @@ export type Database = {
         }
         Relationships: []
       }
-      "sign in": {
+      signup: {
         Row: {
           emailAddress: string | null
           firstName: string
