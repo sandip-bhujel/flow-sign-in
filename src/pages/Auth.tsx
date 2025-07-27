@@ -55,7 +55,7 @@ const Auth = () => {
 
     const redirectUrl = `${window.location.origin}/`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -63,9 +63,8 @@ const Auth = () => {
       }
     });
 
-    setLoading(false);
-
     if (error) {
+      setLoading(false);
       if (error.message.includes("User already registered")) {
         toast({
           title: "Account exists",
@@ -79,12 +78,36 @@ const Auth = () => {
           variant: "destructive",
         });
       }
-    } else {
-      toast({
-        title: "Check your email",
-        description: "We've sent you a confirmation link to complete your sign up.",
-      });
+      return;
     }
+
+    // If auth signup successful, insert user data into signup table
+    if (data.user) {
+      const { error: insertError } = await supabase
+        .from('signup')
+        .insert({
+          emailAddress: email,
+          firstName: firstName,
+          lastName: lastName,
+          phoneNumber: phoneNumber || null,
+          password: password // Note: In production, you might not want to store plain text passwords
+        });
+
+      if (insertError) {
+        console.error('Error inserting user data:', insertError);
+        toast({
+          title: "Account created but data not saved",
+          description: "Your account was created but some details weren't saved. Please contact support.",
+          variant: "destructive",
+        });
+      }
+    }
+
+    setLoading(false);
+    toast({
+      title: "Check your email",
+      description: "We've sent you a confirmation link to complete your sign up.",
+    });
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
